@@ -1,0 +1,211 @@
+:root {
+  --light: #c7f0d8;
+  --dark: #43523d;
+  --mid: #8fae94;
+  --font: 'Press Start 2P', ui-monospace, monospace;
+}
+body.modern {
+  --light: #e8f7ff;
+  --dark: #0b1026;
+  --mid: #5ad1ff;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body {
+  margin: 0; height: 100%; overflow: hidden;
+  background: #222b1f; color: var(--dark);
+  font-family: var(--font);
+  user-select: none; -webkit-user-select: none; touch-action: none;
+  overscroll-behavior: none;
+}
+body.modern { background: #05070f; }
+.hidden { display: none !important; }
+
+/* HUD */
+#hud {
+  position: absolute; left: 0; right: 0; top: 0;
+  padding: max(8px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) 0 max(14px, env(safe-area-inset-left));
+  pointer-events: none; font-size: clamp(10px, 2.2vmin, 18px);
+  color: var(--dark);
+}
+body.modern #hud { color: var(--light); text-shadow: 0 0 6px var(--mid); }
+.hud-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+#hud-stage { text-align: center; margin-top: 6px; opacity: .8; font-size: .8em; }
+#boss-bar {
+  margin: 8px auto 0; width: min(60vw, 520px); height: 10px;
+  border: 2px solid currentColor; padding: 1px;
+}
+#boss-fill { height: 100%; background: currentColor; width: 100%; transition: width .1s; }
+#banner {
+  position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
+  font-size: clamp(14px, 4vmin, 34px); color: var(--dark); text-align: center;
+  pointer-events: none; line-height: 1.6; white-space: pre;
+}
+body.modern #banner { color: var(--light); text-shadow: 0 0 10px var(--mid); }
+#banner.blink { animation: blink .5s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* Overlays */
+.overlay {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  padding: 16px; background: rgba(199, 240, 216, .35);
+}
+body.modern .overlay { background: rgba(5, 7, 15, .55); }
+.panel {
+  background: var(--light); color: var(--dark); border: 4px solid var(--dark);
+  box-shadow: 6px 6px 0 var(--dark);
+  padding: clamp(14px, 3vmin, 30px); text-align: center; max-width: 92vw; max-height: 94vh; overflow: auto;
+}
+body.modern .panel { background: #0d1433; color: var(--light); border-color: var(--mid); box-shadow: 0 0 24px rgba(90, 209, 255, .5); }
+h1 { font-size: clamp(26px, 7vmin, 60px); margin: 0 0 10px; line-height: 1.2; letter-spacing: 4px; }
+h2 { font-size: clamp(18px, 5vmin, 36px); margin: 0 0 14px; }
+.sub { font-size: clamp(8px, 1.6vmin, 12px); margin: 0 0 18px; opacity: .8; }
+.row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.mbtn {
+  font-family: var(--font); font-size: clamp(12px, 2.6vmin, 20px);
+  background: var(--dark); color: var(--light); border: none; cursor: pointer;
+  padding: 12px 22px; margin: 6px 0; min-width: 160px;
+}
+.mbtn.s { font-size: clamp(9px, 1.8vmin, 13px); padding: 10px 14px; min-width: 0; }
+body.modern .mbtn { background: var(--mid); color: #05070f; }
+.mbtn:active { transform: translate(2px, 2px); }
+.mbtn:focus-visible { outline: 3px dashed var(--mid); outline-offset: 3px; }
+#hiscore { font-size: clamp(10px, 2vmin, 14px); margin: 14px 0 6px; }
+.help { font-size: clamp(7px, 1.4vmin, 10px); line-height: 1.9; opacity: .8; margin: 8px 0 0; }
+.mob { display: none; }
+@media (pointer: coarse) {
+  .desk { display: none; }
+  .mob { display: block; }
+}
+
+/* ───────── Console shell ─────────
+   Desktop: only the screen is shown, filling the window.
+   Touch (body.pad): a handheld gamepad. Portrait = screen on top, controls below.
+   Landscape = D-pad left, screen middle, buttons right. */
+#shell { position: fixed; inset: 0; }
+#bezel, #screen { position: absolute; inset: 0; }
+#screen { overflow: hidden; }
+#game { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+.ctrl, .brand, .grill { display: none; }
+
+body.pad {
+  --shell: #f4e3a1; --shell-hi: #fff6cf; --shell-lo: #d8c078;
+  --ink: #5a5236; --btn: #3d4436; --btn-hi: #59644d; --accent: #c23b5a;
+  --dpad: min(40vw, 27vh, 210px);
+  background: var(--shell);
+}
+body.pad.modern {
+  --shell: #1c2238; --shell-hi: #2c3456; --shell-lo: #10142a;
+  --ink: #8fa2e8; --btn: #0a0e1c; --btn-hi: #26304f; --accent: #18b8f0;
+}
+body.pad #shell {
+  display: grid; gap: 12px;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+           max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background:
+    radial-gradient(130% 80% at 25% 0%, var(--shell-hi), transparent 60%),
+    linear-gradient(160deg, var(--shell), var(--shell-lo));
+}
+body.pad #bezel {
+  grid-area: screen; position: relative; inset: auto; min-width: 0; min-height: 0;
+  display: flex; flex-direction: column;
+  padding: 14px 14px 28px;
+  background: linear-gradient(#5a5d52, #3a3c35);
+  border-radius: 12px 12px 36px 12px;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.15), inset 0 -2px 0 rgba(0,0,0,.3), 0 3px 0 var(--shell-lo);
+}
+body.pad.modern #bezel { background: linear-gradient(#0d1124, #070a16); box-shadow: 0 0 0 1px #2c3a6a, 0 0 18px rgba(24,184,240,.25); }
+body.pad #screen { position: relative; inset: auto; flex: 1; min-height: 0; border-radius: 3px; box-shadow: 0 0 0 2px rgba(0,0,0,.45); }
+body.pad #hud { font-size: 9px; padding: 6px 8px 0; }
+body.pad #banner { font-size: 14px; }
+body.pad .brand {
+  display: block; position: absolute; left: 16px; bottom: 8px;
+  font-size: 8px; letter-spacing: 1px; color: #d9dccb; white-space: nowrap;
+}
+.brand i { font-style: italic; color: var(--accent); }
+.led { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 8px; vertical-align: middle;
+  background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+body.pad .ctrl { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; min-width: 0; min-height: 0; }
+#ctrl-left { grid-area: left; }
+#ctrl-right { grid-area: right; }
+
+/* D-pad: four keys in a round recess. Press, or slide your thumb around (8 directions). */
+#dpad {
+  position: relative; width: var(--dpad); height: var(--dpad); border-radius: 50%; touch-action: none;
+  background: radial-gradient(circle at 50% 40%, rgba(0,0,0,.06), rgba(0,0,0,.2));
+  box-shadow: inset 0 4px 10px rgba(0,0,0,.28), 0 2px 0 var(--shell-hi);
+}
+.arm, .hub { position: absolute; width: 30%; height: 30%; pointer-events: none; }
+.arm {
+  background: var(--btn); border-radius: 7px;
+  box-shadow: 0 5px 0 rgba(0,0,0,.35), inset 0 2px 0 var(--btn-hi);
+  transition: transform .05s, box-shadow .05s;
+}
+.arm::after { content: ''; position: absolute; left: 50%; top: 50%; border: 7px solid transparent; transform: translate(-50%, -50%); }
+.arm.up    { left: 35%; top: 4%; }
+.arm.down  { left: 35%; bottom: 4%; }
+.arm.left  { top: 35%; left: 4%; }
+.arm.right { top: 35%; right: 4%; }
+.arm.up::after    { border-bottom-color: rgba(255,255,255,.4); margin-top: -4px; }
+.arm.down::after  { border-top-color: rgba(255,255,255,.4); margin-top: 4px; }
+.arm.left::after  { border-right-color: rgba(255,255,255,.4); margin-left: -4px; }
+.arm.right::after { border-left-color: rgba(255,255,255,.4); margin-left: 4px; }
+.arm.on { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,.35), inset 0 2px 0 var(--btn-hi); background: var(--btn-hi); }
+.hub { left: 35%; top: 35%; border-radius: 50%; background: radial-gradient(circle, rgba(0,0,0,.25) 0 22%, transparent 24%); }
+
+/* A / B: slide between them without lifting your thumb. */
+#actions { position: relative; width: calc(var(--dpad) * 1.05); height: calc(var(--dpad) * 0.85); touch-action: none; }
+.act {
+  position: absolute; aspect-ratio: 1; border-radius: 50%; pointer-events: none;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--accent) 70%, white), var(--accent) 60%);
+  box-shadow: 0 6px 0 rgba(0,0,0,.35), inset 0 -3px 0 rgba(0,0,0,.2);
+  color: rgba(255,255,255,.9); transition: transform .05s, box-shadow .05s;
+}
+.act b { font-size: 16px; font-weight: normal; }
+.act small { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 7px; color: var(--ink); white-space: nowrap; }
+.act.a { width: 50%; right: 0; top: 0; }
+.act.b { width: 40%; left: 0; bottom: 14%; }
+.act.on { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,.35), inset 0 -3px 0 rgba(0,0,0,.2); filter: brightness(1.15); }
+
+/* Small system buttons */
+.sys {
+  font-family: var(--font); font-size: 7px; color: var(--ink); background: none; border: none; padding: 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 7px; touch-action: manipulation; cursor: pointer;
+}
+.sys span { width: 46px; height: 12px; border-radius: 8px; background: var(--btn); box-shadow: 0 3px 0 rgba(0,0,0,.35); transform: rotate(-22deg); }
+.sys:active span { transform: rotate(-22deg) translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.35); }
+
+.grill { gap: 7px; pointer-events: none; }
+.grill i { width: 6px; height: 40px; border-radius: 3px; background: rgba(0,0,0,.16); box-shadow: inset 0 2px 2px rgba(0,0,0,.25); }
+
+@media (orientation: portrait) {
+  body.pad #shell {
+    grid-template-areas: "screen screen" "left right";
+    grid-template-columns: 1fr 1fr; grid-template-rows: auto minmax(0, 1fr);
+    padding-top: max(4px, env(safe-area-inset-top));
+    padding-left: max(4px, env(safe-area-inset-left));
+    padding-right: max(4px, env(safe-area-inset-right));
+  }
+  /* Very thin bezel; a taller 4:3 screen (the game shows a taller playfield to fill it). */
+  body.pad #bezel { padding: 3px 3px 14px; border-radius: 6px 6px 14px 6px; }
+  body.pad #screen { flex: none; aspect-ratio: 4 / 3; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.45); }
+  body.pad .brand { font-size: 6px; left: 8px; bottom: 3px; }
+  body.pad .led { width: 5px; height: 5px; margin-right: 5px; }
+  body.pad .grill { display: flex; position: absolute; right: 26px; bottom: max(16px, env(safe-area-inset-bottom)); transform: rotate(-28deg); }
+  body.pad .ctrl { padding-bottom: 36px; }
+}
+@media (orientation: landscape) {
+  body.pad { --dpad: min(42vh, 21vw, 190px); }
+  body.pad #shell {
+    grid-template-areas: "left screen right";
+    grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr);
+    gap: 16px;
+  }
+  body.pad #bezel { padding: 10px 10px 24px; }
+  body.pad .ctrl { gap: 16px; }
+}
+
+#loading {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: #c7f0d8; color: #43523d; font-size: 14px;
+}

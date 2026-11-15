@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>Mono Strike</title>
+  <meta name="description" content="A retro monochrome side-scrolling space shooter, rebuilt in 3D. Plays on mobile and desktop, installable as an app." />
+  <meta name="theme-color" content="#43523d" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Mono Strike" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <!-- Console shell: on desktop only the screen is shown (full window); on touch devices
+       it becomes a handheld gamepad (portrait: screen on top, landscape: screen in the middle). -->
+  <div id="shell">
+    <div id="bezel">
+      <div id="screen">
+        <canvas id="game"></canvas>
+        <!-- HUD -->
+        <div id="hud" class="hidden">
+          <div class="hud-row">
+            <div id="hud-lives"></div>
+            <div id="hud-special"></div>
+            <div id="hud-score">000000</div>
+          </div>
+          <div id="hud-stage"></div>
+          <div id="boss-bar" class="hidden"><div id="boss-fill"></div></div>
+        </div>
+        <div id="banner" class="hidden"></div>
+      </div>
+      <div class="brand"><span class="led"></span>MONO STRIKE <i>3D</i></div>
+    </div>
+
+    <div id="ctrl-left" class="ctrl">
+      <div id="dpad" aria-label="Direction pad: press or slide">
+        <div class="arm up"></div><div class="arm down"></div>
+        <div class="arm left"></div><div class="arm right"></div>
+        <div class="hub"></div>
+      </div>
+      <button id="btn-padmode" class="sys"><span></span>MODE</button>
+    </div>
+
+    <div id="ctrl-right" class="ctrl">
+      <div id="actions" aria-label="Action buttons: press or slide between them">
+        <div class="act b" data-act="special"><b>B</b><small>SPECIAL</small></div>
+        <div class="act a" data-act="fire"><b>A</b><small>FIRE</small></div>
+      </div>
+      <button id="btn-pause" class="sys"><span></span>PAUSE</button>
+    </div>
+
+    <div class="grill" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+  </div>
+
+  <!-- Menus -->
+  <div id="menu" class="overlay">
+    <div class="panel">
+      <h1>MONO<br/>STRIKE</h1>
+      <p class="sub">A RETRO SHOOTER · 3D EDITION</p>
+      <button id="btn-play" class="mbtn">PLAY</button>
+      <div class="row">
+        <button id="btn-mode" class="mbtn s">MODE: LCD</button>
+        <button id="btn-sound" class="mbtn s">SOUND: ON</button>
+      </div>
+      <button id="btn-install" class="mbtn s hidden">INSTALL APP</button>
+      <p id="hiscore">HI 000000</p>
+      <p class="help desk">ARROWS/WASD MOVE · SPACE FIRE · X SPECIAL<br/>P PAUSE · C COLOR MODE · M SOUND</p>
+      <p class="help mob">D-PAD MOVE (PRESS OR SLIDE) · A FIRE · B SPECIAL<br/>YOU CAN ALSO DRAG ON THE SCREEN</p>
+    </div>
+  </div>
+
+  <div id="pause" class="overlay hidden">
+    <div class="panel">
+      <h2>PAUSED</h2>
+      <button id="btn-resume" class="mbtn">RESUME</button>
+      <div class="row">
+        <button id="btn-mode2" class="mbtn s">MODE: LCD</button>
+        <button id="btn-sound2" class="mbtn s">SOUND: ON</button>
+      </div>
+      <button id="btn-quit" class="mbtn s">QUIT</button>
+    </div>
+  </div>
+
+  <div id="over" class="overlay hidden">
+    <div class="panel">
+      <h2>GAME OVER</h2>
+      <p id="over-score"></p>
+      <button id="btn-retry" class="mbtn">RETRY</button>
+      <button id="btn-menu" class="mbtn s">MENU</button>
+    </div>
+  </div>
+
+  <div id="loading">LOADING…</div>
+
+  <script type="module" src="game.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>

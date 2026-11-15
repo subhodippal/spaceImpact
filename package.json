@@ -1,0 +1,13 @@
+{
+  "name": "mono-strike",
+  "version": "1.0.0",
+  "description": "A retro monochrome side-scrolling space shooter in 3D (three.js PWA).",
+  "private": true,
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js --port 8080"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
