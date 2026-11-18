@@ -4,7 +4,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // ───────────────────────────── constants ─────────────────────────────
 // Playfield in world units. Width is fixed; height grows on taller (portrait) screens, 18 → max 24.
-const W = 32, HW = W / 2;
+const W = 24, HW = W / 2;               // visible playfield width in world units (smaller = bigger ships)
 let H = 18, HH = H / 2;
 const LCD_ROWS = 200;                    // virtual LCD vertical resolution
 const STORE = 'monostrike.';
@@ -72,7 +72,7 @@ function fitCamera() {
   const scr = $('screen');
   const w = Math.max(1, scr.clientWidth), h = Math.max(1, scr.clientHeight);
   renderer.setSize(w, h, false);
-  H = clamp(W / (w / h), 18, 24); HH = H / 2;
+  H = clamp(W / (w / h), 15, 20); HH = H / 2;
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
   // binary search a camera distance that keeps the whole playfield on screen
@@ -684,7 +684,23 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && sta
 
 // ── touch: handheld gamepad controls
 const isTouch = DEBUG.has('pad') || window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-document.body.classList.toggle('pad', isTouch);
+// The Nokia handset is shown everywhere; on desktop it is a centred portrait phone.
+document.body.classList.add('pad');
+document.body.classList.toggle('deskphone', !isTouch);
+// Menus live on the phone's screen, not over the whole window.
+$('screen').append($('menu'), $('pause'), $('over'));
+
+// Keypad: 5 fire (hold), * colour mode, 0 sound, # pause; other keys just click.
+const fireKey = document.querySelector('#keypad [data-k="5"]');
+fireKey.addEventListener('pointerdown', () => { audioInit(); input.touchFire = true; });
+for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) fireKey.addEventListener(ev, () => { input.touchFire = actFingers.size ? [...actFingers.values()].includes('fire') : false; });
+document.getElementById('keypad').addEventListener('click', (e) => {
+  const k = e.target.closest('button')?.dataset.k; if (!k) return;
+  audioInit(); vibrate(8);
+  if (k === '*') toggleMode();
+  else if (k === '0') toggleSound();
+  else if (k === '#') { if (state === 'playing') pauseGame(); else if (state === 'paused') resumeGame(); }
+});
 
 // D-pad: press or slide; 8 directions decided from the thumb's angle to the pad centre.
 const dpad = $('dpad');
