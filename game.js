@@ -17,7 +17,7 @@ function load(key, def) { try { const v = localStorage.getItem(STORE + key); ret
 function save(key, v) { try { localStorage.setItem(STORE + key, JSON.stringify(v)); } catch { /* ignore */ } }
 
 const DEBUG = new URLSearchParams(location.search);
-const settings = { modern: load('modern', false), sound: load('sound', true), orient: load('orient', 'auto') };
+const settings = { modern: load('modern', false), sound: load('sound2', true), orient: load('orient', 'auto') };
 let hiScore = load('hi', 0);
 
 // ───────────────────────────── renderer ─────────────────────────────
@@ -854,11 +854,25 @@ function clearWorld() {
   if (boss) { removeEntity(boss); boss = null; }
   $('boss-bar').classList.add('hidden');
 }
+// Menus never scroll: if a panel is taller/wider than the little screen it is scaled down to fit.
+function fitPanels() {
+  for (const id of ['menu', 'pause', 'over']) {
+    const o = $(id);
+    if (o.classList.contains('hidden')) continue;
+    const p = o.querySelector('.panel');
+    p.style.transform = '';
+    const k = Math.min(1, (o.clientHeight - 6) / p.offsetHeight, (o.clientWidth - 6) / p.offsetWidth);
+    if (k < 1) p.style.transform = `scale(${k})`;
+  }
+}
 function showOnly(id) {
   for (const o of ['menu', 'pause', 'over']) $(o).classList.toggle('hidden', o !== id);
   const playing = id === null;
   $('hud').classList.toggle('hidden', !playing && id !== 'pause');
+  fitPanels();
 }
+addEventListener('resize', fitPanels);
+if (window.ResizeObserver) new ResizeObserver(fitPanels).observe($('screen'));
 // PLAY starts from stage 1 with score 0; CONTINUE (after game over) restarts the stage you died on and keeps the score.
 function startGame(from = 1, keepScore = false) {
   audioInit(); startMusic();
@@ -900,7 +914,7 @@ function gameOver() {
   $('btn-retry').textContent = `CONTINUE · STAGE ${stageNo}`;
   showOnly('over');
 }
-function refreshHi() { $('hiscore').textContent = `HI ${String(hiScore).padStart(6, '0')}`; }
+function refreshHi() { $('hiscore').textContent = `HI SCORE ${String(hiScore).padStart(6, '0')}`; }
 function toggleMode() { settings.modern = !settings.modern; save('modern', settings.modern); applyMode(); }
 // Screen orientation (phones): auto, portrait or landscape. Locks when the browser allows it, otherwise asks to rotate.
 const ORIENT_LABEL = { auto: 'AUTO', portrait: 'PORTRAIT', landscape: 'LANDSCAPE' };
@@ -933,7 +947,7 @@ function cycleOrient() {
 }
 function syncOrientButtons() { for (const id of ['btn-orient', 'btn-orient2']) $(id).textContent = `SCREEN: ${ORIENT_LABEL[settings.orient]}`; }
 function toggleSound() {
-  settings.sound = !settings.sound; save('sound', settings.sound);
+  settings.sound = !settings.sound; save('sound2', settings.sound);
   if (master) master.gain.value = settings.sound ? 0.5 : 0;
   const label = `SOUND: ${settings.sound ? 'ON' : 'OFF'}`;
   $('btn-sound').textContent = label; $('btn-sound2').textContent = label;
@@ -954,12 +968,12 @@ for (const id of ['btn-sound', 'btn-sound2']) $(id).addEventListener('click', ()
 
 // PWA install prompt
 let deferredInstall = null;
-window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; $('btn-install').classList.remove('hidden'); });
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; $('btn-install').classList.remove('hidden'); fitPanels(); });
 $('btn-install').addEventListener('click', async () => {
   if (!deferredInstall) return;
   deferredInstall.prompt();
   await deferredInstall.userChoice.catch(() => {});
-  deferredInstall = null; $('btn-install').classList.add('hidden');
+  deferredInstall = null; $('btn-install').classList.add('hidden'); fitPanels();
 });
 window.addEventListener('appinstalled', () => $('btn-install').classList.add('hidden'));
 

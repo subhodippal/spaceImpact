@@ -71,10 +71,11 @@ body.modern .mbtn { background: var(--mid); color: #05070f; }
 .mbtn:focus-visible { outline: 3px dashed var(--mid); outline-offset: 3px; }
 #hiscore { font-size: clamp(10px, 2vmin, 14px); margin: 14px 0 6px; }
 .help { font-size: clamp(7px, 1.4vmin, 10px); line-height: 1.9; opacity: .8; margin: 8px 0 0; }
-.mob { display: none; }
+.mob, .mob-i { display: none; }
 @media (pointer: coarse) {
   .desk { display: none; }
   .mob { display: block; }
+  .mob-i { display: inline-block; }
 }
 
 /* ───────── Console shell ─────────
@@ -221,15 +222,16 @@ body.pad .ctrl { display: grid; grid-template-rows: minmax(0, 1fr) auto; justify
 /* Menus sit on the handset's screen */
 body.pad .overlay { position: absolute; padding: 8px; background: rgba(199, 240, 216, .35); }
 body.pad.modern .overlay { background: rgba(5, 7, 15, .55); }
-body.pad .panel { border-width: 3px; box-shadow: 4px 4px 0 var(--dark); padding: 10px 12px; max-width: 96%; max-height: 96%; }
+/* the menu never scrolls: it is compact, and fitPanels() (game.js) shrinks it to fit the screen if needed */
+body.pad .panel { border-width: 3px; box-shadow: 4px 4px 0 var(--dark); padding: 8px 10px; max-width: none; max-height: none; overflow: visible; transform-origin: center; }
 body.pad.modern .panel { box-shadow: 0 0 16px rgba(90, 209, 255, .5); }
-body.pad h1 { font-size: 22px; margin-bottom: 6px; letter-spacing: 2px; }
+body.pad h1 { font-size: 20px; margin-bottom: 3px; letter-spacing: 2px; line-height: 1.1; }
 body.pad h2 { font-size: 15px; margin-bottom: 8px; }
-body.pad .sub { font-size: 6px; margin-bottom: 8px; }
-body.pad .mbtn { font-size: 11px; padding: 8px 14px; margin: 4px 0; min-width: 110px; }
-body.pad .mbtn.s { font-size: 7px; padding: 7px 9px; min-width: 0; }
-body.pad #hiscore { font-size: 8px; margin: 8px 0 4px; }
-body.pad .help { font-size: 5px; line-height: 1.9; margin-top: 5px; }
+body.pad .sub { font-size: 5px; margin-bottom: 5px; }
+body.pad .mbtn { font-size: 10px; padding: 6px 12px; margin: 2px 0; min-width: 100px; }
+body.pad .mbtn.s { font-size: 6px; padding: 5px 8px; min-width: 0; }
+body.pad #hiscore { font-size: 7px; margin: 5px 0 2px; }
+body.pad .help { font-size: 4.5px; line-height: 1.6; margin-top: 3px; }
 body.pad .row { gap: 6px; }
 
 /* Portrait handset: screen, then the navi pad and A/B keys. Desktop gets the same as a centred phone. */
@@ -281,3 +283,6 @@ body.pad.deskphone .brand { top: 20px; font-size: 14px; }
 #rotate small { font-size: 8px; opacity: .7; }
 .rot-ico { font-size: 56px; display: inline-block; animation: rotPhone 2.2s ease-in-out infinite; }
 @keyframes rotPhone { 0%, 20% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+.credit { margin-top: 10px; font-size: 7px; letter-spacing: 1px; opacity: .75; }
+.credit span { color: #e0245e; }
+body.pad .credit { font-size: 4.5px; margin-top: 3px; }

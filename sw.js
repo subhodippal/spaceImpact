@@ -1,5 +1,5 @@
 // Mono Strike service worker: offline play after first load.
-const CACHE = 'mono-strike-v15';
+const CACHE = 'mono-strike-v19';
 const LOCAL = [
   './', './index.html', './style.css', './game.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'
