@@ -45,14 +45,14 @@
         </div>
         <div id="banner" class="hidden"></div>
       </div>
-      <div class="brand">NOKIA<i>3D</i></div>
+      <div class="brand">NOKIA</div>
     </div>
 
     <div id="ctrl-left" class="ctrl">
       <div id="dpad" aria-label="Direction pad: press or slide">
         <div class="arm up"></div><div class="arm down"></div>
         <div class="arm left"></div><div class="arm right"></div>
-        <div class="hub"></div>
+        <div class="hub"><span>SLIDE</span></div>
       </div>
       <button id="btn-padmode" class="sys"><span></span>MODE</button>
     </div>
@@ -64,23 +64,9 @@
       </div>
       <button id="btn-pause" class="sys"><span></span>PAUSE</button>
     </div>
-
-    <!-- Numeric keypad. 5 = fire, * = colour mode, 0 = sound, # = pause; the rest are for show. -->
-    <div id="keypad" aria-label="Keypad">
-      <button data-k="1"><b>1</b><small>∞</small></button>
-      <button data-k="2"><b>2</b><small>abc</small></button>
-      <button data-k="3"><b>3</b><small>def</small></button>
-      <button data-k="4"><b>4</b><small>ghi</small></button>
-      <button data-k="5"><b>5</b><small>jkl</small></button>
-      <button data-k="6"><b>6</b><small>mno</small></button>
-      <button data-k="7"><b>7</b><small>pqrs</small></button>
-      <button data-k="8"><b>8</b><small>tuv</small></button>
-      <button data-k="9"><b>9</b><small>wxyz</small></button>
-      <button data-k="*"><b>*</b><small>mode</small></button>
-      <button data-k="0"><b>0</b><small>sound</small></button>
-      <button data-k="#"><b>#</b><small>pause</small></button>
-    </div>
   </div>
+
+  <div id="rotate" class="hidden"><div><span class="rot-ico">📱</span><b id="rotate-text">ROTATE YOUR PHONE</b><small>OR PICK “SCREEN: AUTO”</small></div></div>
 
   <!-- Menus -->
   <div id="menu" class="overlay">
@@ -92,10 +78,11 @@
         <button id="btn-mode" class="mbtn s">MODE: LCD</button>
         <button id="btn-sound" class="mbtn s">SOUND: ON</button>
       </div>
+      <div class="mob"><button id="btn-orient" class="mbtn s">SCREEN: AUTO</button></div>
       <button id="btn-install" class="mbtn s hidden">INSTALL APP</button>
       <p id="hiscore">HI 000000</p>
       <p class="help desk">ARROWS/WASD MOVE · SPACE FIRE · X SPECIAL<br/>P PAUSE · C COLOR MODE · M SOUND</p>
-      <p class="help mob">D-PAD MOVE (PRESS OR SLIDE) · A FIRE · B SPECIAL<br/>YOU CAN ALSO DRAG ON THE SCREEN</p>
+      <p class="help mob">D-PAD MOVE (PRESS OR SLIDE) · A FIRE · B SPECIAL</p>
     </div>
   </div>
 
@@ -107,15 +94,16 @@
         <button id="btn-mode2" class="mbtn s">MODE: LCD</button>
         <button id="btn-sound2" class="mbtn s">SOUND: ON</button>
       </div>
+      <div class="mob"><button id="btn-orient2" class="mbtn s">SCREEN: AUTO</button></div>
       <button id="btn-quit" class="mbtn s">QUIT</button>
     </div>
   </div>
 
   <div id="over" class="overlay hidden">
     <div class="panel">
-      <h2>GAME OVER</h2>
+      <h2 id="over-title">GAME OVER</h2>
       <p id="over-score"></p>
-      <button id="btn-retry" class="mbtn">RETRY</button>
+      <button id="btn-retry" class="mbtn">CONTINUE</button>
       <button id="btn-menu" class="mbtn s">MENU</button>
     </div>
   </div>

@@ -101,6 +101,7 @@ body.pad {
   --act: #d3d4c8; --act-b: #d3d4c8; --act-ink: #2b3350;
   --accent: #4f86c6; --brand: #e4e8f4;
   --dpad: min(40vw, 27vh, 210px);
+  --nav: min(46vw, 30vh, 240px);
   background: #0d0f14;
 }
 body.pad.modern {
@@ -130,7 +131,7 @@ body.pad #shell {
 body.pad #bezel {
   grid-area: screen; position: relative; inset: auto; min-width: 0; min-height: 0;
   display: flex; flex-direction: column;
-  padding: 30px 10px 12px;
+  padding: 42px 20px 50px;
   background: linear-gradient(var(--bezel-a), var(--bezel-b));
   border-radius: 26px 26px 14px 14px;
   box-shadow: inset 0 2px 0 rgba(255,255,255,.14), inset 0 -2px 0 rgba(0,0,0,.4), 0 2px 0 rgba(255,255,255,.18);
@@ -148,42 +149,46 @@ body.pad #screen {
 body.pad #hud { font-size: 9px; padding: 6px 8px 0; }
 body.pad #banner { font-size: 14px; }
 body.pad .brand {
-  display: block; position: absolute; left: 50%; top: 17px; transform: translateX(-50%);
-  font-family: Arial, Helvetica, sans-serif; font-weight: 700; font-size: 11px; letter-spacing: 3px;
-  color: var(--brand); white-space: nowrap; text-shadow: 0 1px 0 rgba(0,0,0,.6);
+  display: block; position: absolute; left: 50%; top: 18px; transform: translateX(-50%);
+  font-family: Arial, Helvetica, sans-serif; font-weight: 900; font-size: 14px; letter-spacing: 4px;
+  color: #fff; white-space: nowrap; text-shadow: 0 0 6px rgba(255,255,255,.45), 0 1px 0 rgba(0,0,0,.7);
 }
-.brand i { font-style: normal; font-size: 5px; letter-spacing: 1px; margin-left: 4px; vertical-align: top; color: var(--accent); }
+.brand i { font-style: normal; font-size: 7px; letter-spacing: 1px; margin-left: 4px; vertical-align: top; color: var(--accent); }
 .led { display: none; }
-body.pad .ctrl { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; min-width: 0; min-height: 0; }
+/* pad / buttons centred, MODE and PAUSE sit on one line at the bottom with room above them */
+body.pad .ctrl { display: grid; grid-template-rows: minmax(0, 1fr) auto; justify-items: center; align-items: center; gap: 26px; min-width: 0; min-height: 0; }
 #ctrl-left { grid-area: left; }
 #ctrl-right { grid-area: right; }
 
 /* Navi pad: four silver keys in a round recess. Press, or slide your thumb around (8 directions). */
 #dpad {
-  position: relative; width: var(--dpad); height: var(--dpad); border-radius: 50%; touch-action: none;
+  position: relative; width: var(--nav); height: var(--nav); border-radius: 50%; touch-action: none;
   background: radial-gradient(circle at 50% 40%, rgba(0,0,0,.05), rgba(0,0,0,.28));
   box-shadow: inset 0 4px 10px rgba(0,0,0,.35), 0 2px 0 var(--shell-hi);
 }
-.arm, .hub { position: absolute; width: 30%; height: 30%; pointer-events: none; }
+/* the touch area reaches past the rim, so a swipe that starts just outside still steers */
+#dpad::before { content: ''; position: absolute; inset: -14%; border-radius: 50%; }
+.arm, .hub { position: absolute; width: 34%; height: 34%; pointer-events: none; }
 .arm {
   background: linear-gradient(var(--btn-hi), var(--btn)); border-radius: 9px;
   box-shadow: 0 5px 0 rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.7);
   transition: transform .05s, box-shadow .05s;
 }
-.arm::after { content: ''; position: absolute; left: 50%; top: 50%; border: 7px solid transparent; transform: translate(-50%, -50%); }
-.arm.up    { left: 35%; top: 4%; }
-.arm.down  { left: 35%; bottom: 4%; }
-.arm.left  { top: 35%; left: 4%; }
-.arm.right { top: 35%; right: 4%; }
+.arm::after { content: ''; position: absolute; left: 50%; top: 50%; border: calc(var(--nav) * 0.065) solid transparent; transform: translate(-50%, -50%); }
+.arm.up    { left: 33%; top: 2%; }
+.arm.down  { left: 33%; bottom: 2%; }
+.arm.left  { top: 33%; left: 2%; }
+.arm.right { top: 33%; right: 2%; }
 .arm.up::after    { border-bottom-color: var(--arrow); margin-top: -4px; }
 .arm.down::after  { border-top-color: var(--arrow); margin-top: 4px; }
 .arm.left::after  { border-right-color: var(--arrow); margin-left: -4px; }
 .arm.right::after { border-left-color: var(--arrow); margin-left: 4px; }
 .arm.on { transform: translateY(3px); box-shadow: 0 2px 0 rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.7); filter: brightness(.88); }
-.hub { left: 35%; top: 35%; border-radius: 50%; background: radial-gradient(circle, rgba(0,0,0,.3) 0 22%, transparent 24%); }
+.hub { left: 33%; top: 33%; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle, rgba(0,0,0,.18) 0 62%, transparent 66%); }
+.hub span { font-size: calc(var(--nav) * 0.06); letter-spacing: 1px; color: var(--ink); opacity: .9; }
 
 /* A / B: call keys. Slide between them without lifting your thumb. */
-#actions { position: relative; width: calc(var(--dpad) * 1.05); height: calc(var(--dpad) * 0.85); touch-action: none; }
+#actions { position: relative; width: calc(var(--dpad) * 1.05); height: calc(var(--nav) * 0.92); touch-action: none; }
 .act {
   position: absolute; aspect-ratio: 1; border-radius: 50%; pointer-events: none;
   display: flex; align-items: center; justify-content: center;
@@ -195,37 +200,23 @@ body.pad .ctrl { display: flex; flex-direction: column; align-items: center; jus
 .act b { font-size: 16px; font-weight: normal; }
 .act small { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 7px; color: var(--ink); white-space: nowrap; }
 .act.a { width: 50%; right: 0; top: 0; }
-.act.b { width: 40%; left: 0; bottom: 14%; }
+.act.b { width: 40%; left: 8%; bottom: 4%; }
 .act.on { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,.4), inset 0 -3px 0 rgba(0,0,0,.18); filter: brightness(1.12); }
 
 /* Small system buttons (soft keys) */
 .sys {
-  font-family: var(--font); font-size: 7px; color: var(--ink); background: none; border: none; padding: 4px;
+  font-family: var(--font); font-size: 9px; font-weight: bold; color: var(--ink); background: none; border: none; padding: 4px;
   display: flex; flex-direction: column; align-items: center; gap: 7px; touch-action: manipulation; cursor: pointer;
 }
 .sys span {
-  width: 46px; height: 13px; border-radius: 8px 8px 12px 12px;
-  background: linear-gradient(var(--btn-hi), var(--btn)); box-shadow: 0 3px 0 rgba(0,0,0,.4);
-  transform: rotate(-12deg);
+  width: 84px; height: 22px; border-radius: 10px 10px 14px 14px;
+  background: linear-gradient(var(--btn-hi), var(--btn)); box-shadow: 0 4px 0 rgba(0,0,0,.45);
+  transform: rotate(-8deg);
 }
-.sys span::after { content: ''; display: block; width: 14px; height: 2px; margin: 5px auto 0; border-radius: 1px; background: var(--accent); }
-.sys:active span { transform: rotate(-12deg) translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
+.sys span::after { content: ''; display: block; width: 22px; height: 3px; margin: 9px auto 0; border-radius: 1px; background: var(--accent); }
+.sys:active span { transform: rotate(-8deg) translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.4); }
 
 .grill { display: none !important; }
-
-/* Numeric keypad */
-#keypad { grid-area: keys; display: none; grid-template-columns: repeat(3, 1fr); gap: 7px 12px; padding: 0 6px 4px; touch-action: manipulation; }
-#keypad button {
-  font-family: Arial, Helvetica, sans-serif; cursor: pointer; border: none; padding: 0; height: 34px;
-  display: flex; align-items: center; justify-content: center; gap: 4px;
-  color: var(--arrow); background: linear-gradient(var(--btn-hi), var(--btn));
-  border-radius: 50% / 45%; box-shadow: 0 3px 0 rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.7);
-}
-#keypad button:nth-child(3n+1) { border-radius: 14px 40% 40% 14px / 14px 45% 45% 14px; }
-#keypad button:nth-child(3n)   { border-radius: 40% 14px 14px 40% / 45% 14px 14px 45%; }
-#keypad b { font-size: 17px; line-height: 1; }
-#keypad small { font-size: 7px; opacity: .8; align-self: flex-end; margin-bottom: 7px; }
-#keypad button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,.4); filter: brightness(.9); }
 
 /* Menus sit on the handset's screen */
 body.pad .overlay { position: absolute; padding: 8px; background: rgba(199, 240, 216, .35); }
@@ -241,48 +232,52 @@ body.pad #hiscore { font-size: 8px; margin: 8px 0 4px; }
 body.pad .help { font-size: 5px; line-height: 1.9; margin-top: 5px; }
 body.pad .row { gap: 6px; }
 
-/* Portrait handset: screen, navi/call keys, keypad. Desktop gets the same as a centred phone. */
+/* Portrait handset: screen, then the navi pad and A/B keys. Desktop gets the same as a centred phone. */
 @media (orientation: portrait) {
   body.pad #shell {
-    grid-template-areas: "screen screen" "left right" "keys keys";
-    grid-template-columns: 1fr 1fr; grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas: "screen screen" "left right";
+    grid-template-columns: 1fr 1fr; grid-template-rows: auto minmax(0, 1fr);
     padding: 12px 12px 10px; gap: 8px;
   }
-  body.pad { --dpad: min(34vw, 18vh, 150px); }
+  body.pad { --dpad: min(34vw, 18vh, 150px); --nav: min(46vw, 26vh, 215px); }
   body.pad #screen { flex: none; aspect-ratio: 4 / 3; }
-  body.pad .ctrl { padding-bottom: 14px; gap: 14px; }
-  body.pad #keypad { display: grid; align-content: start; }
-}
+  body.pad .ctrl { padding-bottom: 64px; gap: 18px; }
+  }
 body.pad.deskphone #shell {
   inset: auto; top: 50%; left: 50%; transform: translate(-50%, -50%);
   height: min(98vh, 980px); aspect-ratio: 0.54; max-width: 96vw;
-  grid-template-areas: "screen screen" "left right" "keys keys";
-  grid-template-columns: 1fr 1fr; grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-areas: "screen screen" "left right";
+  grid-template-columns: 1fr 1fr; grid-template-rows: auto minmax(0, 1fr);
   padding: 14px 16px 12px; gap: 8px; border-radius: 44px 44px 60px 60px;
 }
-body.pad.deskphone { --dpad: min(17vh, 150px); }
+body.pad.deskphone { --dpad: min(17vh, 150px); --nav: min(22vh, 210px); }
 body.pad.deskphone #screen { flex: none; aspect-ratio: 4 / 3; }
-body.pad.deskphone .ctrl { padding-bottom: 14px; gap: 14px; }
-body.pad.deskphone #bezel { padding: 30px 12px 14px; }
+body.pad.deskphone .ctrl { padding-bottom: 64px; gap: 18px; }
+body.pad.deskphone #bezel { padding: 44px 22px 52px; }
 body.pad.deskphone #bezel::before { top: 9px; }
-body.pad.deskphone .brand { top: 17px; font-size: 11px; }
-body.pad.deskphone #keypad { display: grid; align-content: start; }
-body.pad.deskphone #keypad button { height: min(5vh, 44px); }
+body.pad.deskphone .brand { top: 20px; font-size: 14px; }
 @media (orientation: landscape) {
-  body.pad:not(.deskphone) { --dpad: min(38vh, 20vw, 170px); }
+  body.pad:not(.deskphone) { --dpad: min(38vh, 20vw, 170px); --nav: min(52vh, 25vw, 230px); }
   body.pad:not(.deskphone) #shell {
     grid-template-areas: "left screen right";
     grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: minmax(0, 1fr);
     gap: 14px; padding: 12px 18px; border-radius: 40px;
   }
-  body.pad:not(.deskphone) #bezel { padding: 24px 10px 10px; }
+  body.pad:not(.deskphone) #bezel { padding: 30px 16px 22px; }
   body.pad:not(.deskphone) #bezel::before { top: 7px; }
-  body.pad:not(.deskphone) .brand { top: 11px; font-size: 9px; }
-  body.pad:not(.deskphone) .ctrl { gap: 14px; }
-  body.pad:not(.deskphone) #keypad { display: none; }
+  body.pad:not(.deskphone) .brand { top: 10px; font-size: 11px; }
+  body.pad:not(.deskphone) .ctrl { gap: 22px; }
 }
 
 #loading {
   position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
   background: #c7f0d8; color: #43523d; font-size: 14px;
 }
+
+/* screen orientation choice (phones) */
+#rotate { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; text-align: center; background: rgba(8, 12, 30, .95); color: #fff; font-family: var(--font); }
+#rotate > div { display: flex; flex-direction: column; gap: 12px; align-items: center; padding: 24px; }
+#rotate b { font-size: 14px; line-height: 1.6; }
+#rotate small { font-size: 8px; opacity: .7; }
+.rot-ico { font-size: 56px; display: inline-block; animation: rotPhone 2.2s ease-in-out infinite; }
+@keyframes rotPhone { 0%, 20% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }

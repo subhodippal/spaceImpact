@@ -17,7 +17,7 @@ function load(key, def) { try { const v = localStorage.getItem(STORE + key); ret
 function save(key, v) { try { localStorage.setItem(STORE + key, JSON.stringify(v)); } catch { /* ignore */ } }
 
 const DEBUG = new URLSearchParams(location.search);
-const settings = { modern: load('modern', false), sound: load('sound', true) };
+const settings = { modern: load('modern', false), sound: load('sound', true), orient: load('orient', 'auto') };
 let hiScore = load('hi', 0);
 
 // ───────────────────────────── renderer ─────────────────────────────
@@ -107,7 +107,7 @@ if (window.ResizeObserver) new ResizeObserver(() => fitCamera()).observe($('scre
 const PAL = {
   player: [0x4fd1ff, 0xfff27a], drone: [0xff5a7a, 0xffffff], waver: [0xc77dff, 0xffffff],
   shooter: [0xff9f43, 0xfff27a], diver: [0x2ee59d, 0xffffff], rock: [0x9a8c7a, 0xc2b59b],
-  carrier: [0xffd166, 0xff5a7a], boss: [0xe056fd, 0xfff27a], pbullet: 0xfff27a, ebullet: 0xff4757
+  carrier: [0xffd166, 0xff5a7a], zigzag: [0x48dbfb, 0xffffff], bomber: [0xee5253, 0xfff27a], orbiter: [0x1dd1a1, 0xffffff], boss: [0xe056fd, 0xfff27a], pbullet: 0xfff27a, ebullet: 0xff4757
 };
 function makeMats(pair) {
   return [
@@ -133,6 +133,22 @@ const MODELS = {
   boss2: ["....######....", "..##########..", ".####@@@@####.", "###@@oooo@@###", "##@@oooooo@@##", "##@@oooooo@@##",
     "###@@oooo@@###", ".####@@@@####.", "..##########..", "....######...."]
 };
+const mirror = (half) => half.concat(half.slice(0, -1).reverse());   // draw the top half, get the full (up/down symmetric) ship
+Object.assign(MODELS, {
+  zigzag: ["...#...", "..###..", ".##o##.", "#######", ".#...#."],
+  bomber: ["#.......", "##.####.", "###@@@##", "##o####.", "#...#..."],
+  orbiter: ["..###..", ".#ooo#.", "##ooo##", ".#ooo#.", "..###.."],
+  // bosses
+  ufo: [".....######.....", "...##########...", "..####@@@@####..", "################", "#o##o##o##o##o##", "################", ".##...####...##.", "..#...#..#...#.."],
+  spider: ["#...........#", ".#.........#.", "..#..###..#..", "..###o#o###..", "#.###@@@###.#", "..###@@@###..", "..#..###..#..", ".#.........#.", "#...........#"],
+  rocket: mirror(["####............", ".###....####....", "..###.########..", "..##@@@@@@@@###.", "oo##@@@@@@@@@###"]),
+  octopus: ["....#####....", "..#########..", ".###########.", ".##oo###oo##.", ".###########.", "#############", "#.##.###.##.#", "#.#..#.#..#.#", "#.#..#.#..#.#", ".#....#....#."],
+  crab: mirror(["#..#..#........", ".#..#..#.....##", "..#######..####", "..##o###o.##..#", "..#########....", "..####@@@@####."]),
+  manta: mirror(["###............", ".#####.........", "..#######......", "...#########...", "....##o#######.", "#######@@@@####"]),
+  skull: ["..#######..", ".#########.", "###########", "##oo###oo##", "##oo###oo##", "###########", "#####.#####", "..#######..", "..#.#.#.#..", "..#.#.#.#.."],
+  mech: ["...#####...", "..##o###o##", "...#####...", "#####@#####", "###########", "##.#@@@#.##", "##.#@@@#.##", "##..###..##", "....#.#....", "...##.##...", "...##.##...", "..###.###.."],
+  queen: mirror(["##...............", ".###.............", "..####....###....", "...#####.#####...", "....#########o##.", ".....#@@@@@@@####"])
+});
 const geoCache = new Map();
 function voxelModel(name, s) {
   const key = name + s;
@@ -352,6 +368,8 @@ function vibrate(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } cat
 // ───────────────────────────── game state ─────────────────────────────
 let state = 'menu';         // menu | playing | paused | over
 let score = 0, lives = 3, stageNo = 1, loop = 0;
+let godMode = false;
+let victoryShown = false;      // tap MODE 7 times: infinite lives + drag the ship directly
 let enemies = [], pBullets = [], eBullets = [], pickups = [], missiles = [];
 let boss = null;
 let shake = 0, flashT = 0, bannerT = 0;
@@ -359,11 +377,26 @@ let theme = { floor: false, ceil: false };
 let director = null;
 
 const STAGES = [
-  { name: 'OUTER RIM', floor: false, ceil: false, mix: ['drone', 'drone', 'waver', 'diver', 'carrier'], boss: 'boss0' },
-  { name: 'ROCK BELT', floor: false, ceil: false, mix: ['rock', 'drone', 'waver', 'shooter', 'carrier'], boss: 'boss1' },
-  { name: 'SURFACE RUN', floor: true, ceil: false, mix: ['drone', 'diver', 'shooter', 'waver', 'carrier'], boss: 'boss2' },
-  { name: 'DEEP CAVERN', floor: true, ceil: true, mix: ['waver', 'diver', 'shooter', 'rock', 'carrier'], boss: 'boss1' },
-  { name: 'THE CORE', floor: false, ceil: false, mix: ['drone', 'waver', 'shooter', 'diver', 'rock', 'carrier'], boss: 'boss0' }
+  { name: 'OUTER RIM',    floor: false, ceil: false, boss: 'ufo',     bname: 'ALIEN SAUCER', mix: ['drone', 'drone', 'waver', 'diver', 'carrier'],
+    pat: ['aimed', 'spread', 'minions'], mv: [0.7, 0.45, 2], pal: [0xe056fd, 0xfff27a] },
+  { name: 'ROCK BELT',    floor: false, ceil: false, boss: 'spider',  bname: 'ROCK SPIDER', mix: ['rock', 'drone', 'waver', 'shooter', 'carrier'],
+    pat: ['spread', 'wall', 'aimed', 'minions'], mv: [1.0, 0.5, 2.5], pal: [0xc8a27a, 0xff6b4a] },
+  { name: 'SURFACE RUN',  floor: true,  ceil: false, boss: 'rocket',  bname: 'ROCKET SHIP', mix: ['drone', 'diver', 'shooter', 'waver', 'carrier', 'zigzag'],
+    pat: ['aimed', 'rain', 'aimed', 'minions'], mv: [0.8, 0.9, 3], pal: [0xff6b6b, 0xfff27a] },
+  { name: 'DEEP CAVERN',  floor: true,  ceil: true,  boss: 'octopus', bname: 'CAVE OCTOPUS', mix: ['waver', 'diver', 'shooter', 'rock', 'carrier', 'orbiter'],
+    pat: ['ring', 'aimed', 'spiral', 'minions'], mv: [0.55, 0.4, 1.5], pal: [0x9b59b6, 0xff9ff3] },
+  { name: 'THE CORE',     floor: false, ceil: false, boss: 'core',    bname: 'CORE GUARDIAN', mix: ['drone', 'waver', 'shooter', 'diver', 'rock', 'carrier', 'zigzag'],
+    pat: ['ring', 'spiral', 'spread', 'minions'], mv: [0.7, 0.45, 2], pal: [0xe056fd, 0xfff27a] },
+  { name: 'NEBULA',       floor: false, ceil: false, boss: 'crab',    bname: 'STAR CRAB', mix: ['zigzag', 'orbiter', 'drone', 'shooter', 'bomber'],
+    pat: ['wall', 'spread', 'rain', 'aimed'], mv: [0.85, 0.6, 2.5], pal: [0xff7f50, 0xfff27a] },
+  { name: 'ICE RING',     floor: false, ceil: true,  boss: 'manta',   bname: 'ICE MANTA', mix: ['bomber', 'diver', 'zigzag', 'waver', 'carrier'],
+    pat: ['aimed', 'spiral', 'rain', 'minions'], mv: [0.75, 1.0, 3.5], pal: [0x54a0ff, 0xdff9fb] },
+  { name: 'WARP GATE',    floor: true,  ceil: false, boss: 'skull',   bname: 'DEATH SKULL', mix: ['orbiter', 'bomber', 'rock', 'shooter', 'diver'],
+    pat: ['ring', 'wall', 'spiral', 'aimed'], mv: [0.65, 0.5, 2], pal: [0xdfe4ea, 0xff4757] },
+  { name: 'DEAD FLEET',   floor: true,  ceil: true,  boss: 'mech',    bname: 'WAR MECH', mix: ['bomber', 'zigzag', 'orbiter', 'shooter', 'carrier', 'rock'],
+    pat: ['spread', 'rain', 'wall', 'ring', 'minions'], mv: [0.9, 0.55, 2.5], pal: [0x7bed9f, 0xff6348] },
+  { name: 'THE HIVE',     floor: false, ceil: false, boss: 'queen',   bname: 'HIVE QUEEN', mix: ['bomber', 'orbiter', 'zigzag', 'shooter', 'diver', 'rock', 'carrier'],
+    pat: ['ring', 'spiral', 'rain', 'spread', 'wall', 'minions'], mv: [1.0, 0.7, 3], pal: [0xff4d6d, 0xfff27a] }
 ];
 
 // ── player
@@ -447,13 +480,21 @@ const ETYPES = {
   shooter: { hp: 3, score: 30, s: 0.24, speed: 5 },
   diver: { hp: 2, score: 25, s: 0.26, speed: 8 },
   rock: { hp: 6, score: 40, s: 0.32, speed: 3 },
-  carrier: { hp: 4, score: 50, s: 0.24, speed: 4 }
+  carrier: { hp: 4, score: 50, s: 0.24, speed: 4 },
+  zigzag: { hp: 1, score: 20, s: 0.26, speed: 6 },
+  bomber: { hp: 4, score: 45, s: 0.26, speed: 3.5 },
+  orbiter: { hp: 2, score: 30, s: 0.24, speed: 5 }
 };
 function spawnY(m = 2) { const lo = -HH + m + (theme.floor ? 3.2 : 0), hi = HH - m - (theme.ceil ? 3.2 : 0); return rand(lo, hi); }
+// every stage dresses the enemies in slightly different colours
+function stageTint(pair) {
+  const i = (stageNo - 1) % STAGES.length;
+  return [new THREE.Color(pair[0]).offsetHSL(i * 0.083, 0, 0).getHex(), pair[1]];
+}
 function difficulty() { return 1 + (stageNo - 1) * 0.12 + loop * 0.45; }
 function spawnEnemy(type, x, y, extra = {}) {
   const def = ETYPES[type];
-  const ship = makeShip(type, def.s, PAL[type], true);
+  const ship = makeShip(type, def.s, stageTint(PAL[type]), true);
   ship.mesh.position.set(x, y, 0);
   scene.add(ship.mesh);
   const d = difficulty();
@@ -472,6 +513,9 @@ const FORMATIONS = {
   diver: () => { for (let i = 0; i < 3; i++) spawnEnemy('diver', HW + 2 + i * 2.5, spawnY(2)); },
   rock: () => { const n = 2 + ((Math.random() * 2) | 0); for (let i = 0; i < n; i++) spawnEnemy('rock', HW + 2 + i * 4, spawnY(2)); },
   carrier: () => spawnEnemy('carrier', HW + 2, spawnY(3), { drop: true }),
+  zigzag: () => { const y = spawnY(4); for (let i = 0; i < 5; i++) spawnEnemy('zigzag', HW + 2 + i * 1.5, y, { phase: i * 0.5, amp: rand(2, 3.2) }); },
+  bomber: () => { const n = 1 + (Math.random() < 0.3 + stageNo * 0.05 ? 1 : 0); for (let i = 0; i < n; i++) spawnEnemy('bomber', HW + 2 + i * 3, spawnY(2.5), { stopX: rand(HW - 8, HW - 3) }); },
+  orbiter: () => { const y = spawnY(4); for (let i = 0; i < 3; i++) spawnEnemy('orbiter', HW + 2 + i * 2.4, y, { phase: i * 2.1, amp: rand(2, 3.4) }); },
   vee: () => { const y = spawnY(4); for (let i = 0; i < 5; i++) { const k = Math.abs(i - 2); spawnEnemy('drone', HW + 2 + k * 1.6, y + (i - 2) * 1.4); } }
 };
 function removeEntity(e) { scene.remove(e.mesh); if (e.mats) e.mats.forEach((m) => m.dispose()); }
@@ -518,18 +562,20 @@ function collectPickup(p) {
 // ── boss
 function spawnBoss() {
   const st = STAGES[(stageNo - 1) % STAGES.length];
-  const ship = makeShip(st.boss, 0.42, PAL.boss, st.boss !== 'boss2');
+  const model = st.boss === 'core' ? 'boss2' : st.boss;
+  const ship = makeShip(model, 0.42, st.pal, !['core', 'octopus', 'skull', 'mech'].includes(st.boss));
   ship.mesh.position.set(HW + 8, 0, 0);
   scene.add(ship.mesh);
   const hp = Math.round((60 + stageNo * 25) * (1 + loop * 0.6));
-  boss = { ...ship, x: HW + 8, y: 0, hp, maxHp: hp, t: 0, phase: 'enter', atkCd: 2, atk: 0, flash: 0, kind: st.boss };
+  boss = { ...ship, x: HW + 8, y: 0, hp, maxHp: hp, t: 0, phase: 'enter', atkCd: 2, atk: 0, flash: 0, kind: st.boss, pat: st.pat, mv: st.mv };
+  flashBanner(st.bname, 1.8);
   $('boss-bar').classList.remove('hidden');
   updateBossBar();
 }
 function updateBossBar() { if (boss) $('boss-fill').style.width = `${(100 * boss.hp) / boss.maxHp}%`; }
 function bossAttack() {
   const d = difficulty();
-  const patterns = boss.kind === 'boss0' ? ['aimed', 'spread', 'minions'] : boss.kind === 'boss1' ? ['spread', 'wall', 'aimed', 'minions'] : ['ring', 'aimed', 'spiral', 'minions'];
+  const patterns = boss.pat;
   const p = patterns[boss.atk % patterns.length];
   boss.atk++;
   const bx = boss.x - boss.hw * 0.7, by = boss.y;
@@ -538,6 +584,7 @@ function bossAttack() {
   else if (p === 'wall') { const gap = rand(-HH + 3, HH - 3); for (let y = -HH + 0.8; y < HH; y += 1.3) if (Math.abs(y - gap) > 2) fireEnemy(HW + 1, y, Math.PI, 7 * Math.sqrt(d)); boss.atkCd = 2.0; }
   else if (p === 'ring') { const n = 14 + stageNo * 2; const off = Math.random(); for (let i = 0; i < n; i++) fireEnemy(boss.x, by, off + (i / n) * Math.PI * 2, 7 * Math.sqrt(d)); boss.atkCd = 1.8; }
   else if (p === 'spiral') { for (let i = 0; i < 18; i++) setTimeout(() => boss && fireEnemy(boss.x, boss.y, boss.t * 3 + i * 0.5, 7.5), i * 70); boss.atkCd = 2.0; }
+  else if (p === 'rain') { for (let i = 0; i < 7; i++) fireEnemy(rand(-HW * 0.3, HW), HH + 0.8, -Math.PI / 2 - rand(0.1, 0.45), 6.5 * Math.sqrt(d)); boss.atkCd = 1.4; }
   else if (p === 'minions') { for (let i = 0; i < 3; i++) spawnEnemy(pick(['drone', 'diver']), HW + 2 + i * 1.5, clamp(by + (i - 1) * 3, -HH + 2, HH - 2)); boss.atkCd = 1.5; }
   boss.atkCd /= Math.sqrt(d);
 }
@@ -550,9 +597,10 @@ function killBoss() {
   shake = 1.2; flashT = 0.3;
   for (let i = 0; i < 8; i++) setTimeout(() => burst(b.x + rand(-b.hw, b.hw), b.y + rand(-b.hh, b.hh), pick([0xe056fd, 0xfff27a, 0xffffff]), 40, 12, 0.4), i * 120);
   removeEntity(b);
+  const last = stageNo >= STAGES.length;
   eBullets.forEach((eb) => scene.remove(eb.mesh)); eBullets = [];
   director.phase = 'clear'; director.t = 0;
-  setTimeout(() => { sfx.clear(); flashBanner(`STAGE ${stageNo}\nCLEAR!`, 2.6); }, 900);
+  setTimeout(() => { sfx.clear(); flashBanner(last ? 'ALL CLEAR!' : `STAGE ${stageNo}\nCLEAR!`, 2.6); }, 900);
 }
 
 // ── stage director
@@ -586,12 +634,12 @@ function updateDirector(dt) {
     return;
   }
   if (d.phase === 'warning') { if (d.t > 2.4) { d.phase = 'boss'; spawnBoss(); } return; }
-  if (d.phase === 'clear') { if (d.t > 4) startStage(stageNo + 1); }
+  if (d.phase === 'clear') { if (d.t > 4) { if (stageNo >= STAGES.length) victory(); else startStage(stageNo + 1); } }
 }
 
 // ── colors per stage (modern mode)
-const STAGE_BG = [0x060a1a, 0x120a1a, 0x061410, 0x0f0a05, 0x150515];
-const STAGE_TERRAIN = [0x3d5a80, 0x6d4c41, 0x2e7d32, 0x5d4037, 0x7b1fa2];
+const STAGE_BG = [0x060a1a, 0x120a1a, 0x061410, 0x0f0a05, 0x150515, 0x180a14, 0x06141c, 0x0a0a0f, 0x140808, 0x14050f];
+const STAGE_TERRAIN = [0x3d5a80, 0x6d4c41, 0x2e7d32, 0x5d4037, 0x7b1fa2, 0x8e44ad, 0x4a90b8, 0x57606f, 0x7f3b2e, 0x9b2c5a];
 function applyStageColors(n) {
   const i = (n - 1) % STAGES.length;
   terrainMat.color.set(STAGE_TERRAIN[i]);
@@ -614,7 +662,7 @@ function applyMode() {
 // ───────────────────────────── scoring / HUD ─────────────────────────────
 function addScore(n) { score += n; $('hud-score').textContent = String(score).padStart(6, '0'); }
 function updateHud() {
-  $('hud-lives').textContent = '♥'.repeat(Math.min(lives, 5)) + (lives > 5 ? `×${lives}` : '');
+  $('hud-lives').textContent = godMode ? '♥ ∞' : '♥'.repeat(Math.min(lives, 5)) + (lives > 5 ? `×${lives}` : '');
   $('hud-special').textContent = player.special ? `${SPECIALS[player.special].label} ${player.ammo}` : `PWR ${'▮'.repeat(player.power)}`;
   if (player.special) $('hud-special').textContent += `  PWR ${'▮'.repeat(player.power)}`;
   $('hud-stage').textContent = `STAGE ${stageNo}`;
@@ -648,7 +696,7 @@ function damageBoss(dmg) {
   if (boss.hp <= 0) killBoss();
 }
 function hurtPlayer() {
-  if (!player.alive || player.inv > 0 || player.shieldT > 0) return;
+  if (!player.alive || player.inv > 0 || player.shieldT > 0 || godMode) return;
   player.alive = false;
   player.mesh.visible = false;
   burst(player.x, player.y, PAL.player[0], 50, 11, 0.32);
@@ -689,18 +737,6 @@ document.body.classList.add('pad');
 document.body.classList.toggle('deskphone', !isTouch);
 // Menus live on the phone's screen, not over the whole window.
 $('screen').append($('menu'), $('pause'), $('over'));
-
-// Keypad: 5 fire (hold), * colour mode, 0 sound, # pause; other keys just click.
-const fireKey = document.querySelector('#keypad [data-k="5"]');
-fireKey.addEventListener('pointerdown', () => { audioInit(); input.touchFire = true; });
-for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) fireKey.addEventListener(ev, () => { input.touchFire = actFingers.size ? [...actFingers.values()].includes('fire') : false; });
-document.getElementById('keypad').addEventListener('click', (e) => {
-  const k = e.target.closest('button')?.dataset.k; if (!k) return;
-  audioInit(); vibrate(8);
-  if (k === '*') toggleMode();
-  else if (k === '0') toggleSound();
-  else if (k === '#') { if (state === 'playing') pauseGame(); else if (state === 'paused') resumeGame(); }
-});
 
 // D-pad: press or slide; 8 directions decided from the thumb's angle to the pad centre.
 const dpad = $('dpad');
@@ -759,10 +795,10 @@ function releaseTouchControls() { actFingers.clear(); refreshActs(); dpadId = nu
 
 // Optional: drag directly on the game screen to move (relative, like a touchpad).
 let dragId = null, dragX = 0, dragY = 0;
-canvas.addEventListener('pointerdown', (e) => { if (!isTouch || state !== 'playing') return; audioInit(); dragId = e.pointerId; dragX = e.clientX; dragY = e.clientY; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointerdown', (e) => { if (!godMode || !isTouch || state !== 'playing') return; audioInit(); dragId = e.pointerId; dragX = e.clientX; dragY = e.clientY; canvas.setPointerCapture(e.pointerId); });
 canvas.addEventListener('pointermove', (e) => {
   if (e.pointerId !== dragId) return;
-  const sens = 1.35 / pxPerUnit;
+  const sens = 1 / pxPerUnit;           // 1:1, the ship follows the finger
   input.dx += (e.clientX - dragX) * sens; input.dy -= (e.clientY - dragY) * sens;
   dragX = e.clientX; dragY = e.clientY;
 });
@@ -770,7 +806,22 @@ const endDrag = (e) => { if (e.pointerId === dragId) dragId = null; };
 canvas.addEventListener('pointerup', endDrag); canvas.addEventListener('pointercancel', endDrag);
 
 $('btn-pause').addEventListener('click', () => { audioInit(); if (state === 'playing') pauseGame(); else if (state === 'paused') resumeGame(); });
-$('btn-padmode').addEventListener('click', () => toggleMode());
+// MODE switches the screen colours; tapping it 7 times in a row toggles god mode instead.
+let modeTaps = 0, modeTapT = 0;
+$('btn-padmode').addEventListener('click', () => {
+  const now = performance.now();
+  modeTaps = now - modeTapT < 350 ? modeTaps + 1 : 1;   // each tap within 0.35 s of the last: only very fast tapping counts
+  modeTapT = now;
+  if (modeTaps >= 7) {
+    modeTaps = 0;
+    godMode = !godMode;
+    dragId = null;
+    updateHud(); vibrate(60); audioInit();
+    flashBanner(godMode ? 'GOD MODE ON' : 'GOD MODE OFF', 1.6);
+    return;                       // 7th tap: no colour switch (the six before it cancel out in pairs)
+  }
+  toggleMode();
+});
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 // gamepad
@@ -788,7 +839,7 @@ function readGamepad() {
     if (sp && !padSpecialPrev && state === 'playing') useSpecial();
     padSpecialPrev = sp;
     const st = b(9);
-    if (st && !padStartPrev) { if (state === 'playing') pauseGame(); else if (state === 'paused') resumeGame(); else if (state === 'menu' || state === 'over') startGame(); }
+    if (st && !padStartPrev) { if (state === 'playing') pauseGame(); else if (state === 'paused') resumeGame(); else if (state === 'menu') startGame(); else if (state === 'over') continueGame(); }
     padStartPrev = st;
     return r;
   }
@@ -808,15 +859,18 @@ function showOnly(id) {
   const playing = id === null;
   $('hud').classList.toggle('hidden', !playing && id !== 'pause');
 }
-function startGame() {
+// PLAY starts from stage 1 with score 0; CONTINUE (after game over) restarts the stage you died on and keeps the score.
+function startGame(from = 1, keepScore = false) {
   audioInit(); startMusic();
   clearWorld();
-  score = 0; lives = 3;
+  victoryShown = false;
+  if (!keepScore) score = 0;
+  lives = 3;
   Object.assign(player, { x: -HW + 4, y: 0, alive: true, inv: 2, power: 1, special: null, ammo: 0, laserT: 0, shieldT: 0, respawnT: 0 });
   player.mesh.visible = true; input.dx = input.dy = 0; laserMesh.visible = false; shieldGroup.visible = false;
   state = 'playing';
   showOnly(null);
-  startStage(Math.max(1, parseInt(DEBUG.get('stage'), 10) || 1));
+  startStage(Math.max(1, parseInt(DEBUG.get('stage'), 10) || from));
   if (DEBUG.has('boss')) director.waves = 0;
   if (isTouch) {
     try { const el = document.documentElement; if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen().catch(() => {}); } catch { /* ignore */ }
@@ -825,16 +879,59 @@ function startGame() {
 function pauseGame() { if (state !== 'playing') return; releaseTouchControls(); state = 'paused'; musicOn = false; showOnly('pause'); }
 function resumeGame() { if (state !== 'paused') return; state = 'playing'; input.dx = input.dy = 0; startMusic(); showOnly(null); }
 function quitToMenu() { clearWorld(); state = 'menu'; musicOn = false; player.mesh.visible = true; player.alive = true; player.inv = 0; player.laserT = 0; player.shieldT = 0; laserMesh.visible = false; shieldGroup.visible = false; theme = { floor: false, ceil: false }; showOnly('menu'); refreshHi(); $('banner').classList.add('hidden'); }
+function continueGame() { if (victoryShown) startGame(1); else startGame(stageNo, true); }
+function victory() {
+  if (state !== 'playing') return;
+  state = 'over'; musicOn = false; victoryShown = true;
+  const newHi = score > hiScore;
+  if (newHi) { hiScore = score; save('hi', hiScore); }
+  $('over-title').textContent = 'YOU WIN!';
+  $('over-score').innerHTML = `ALL ${STAGES.length} STAGES CLEAR<br/><br/>SCORE ${String(score).padStart(6, '0')}<br/><br/>${newHi ? 'NEW HIGH SCORE!' : `HI ${String(hiScore).padStart(6, '0')}`}`;
+  $('btn-retry').textContent = 'PLAY AGAIN';
+  showOnly('over');
+}
 function gameOver() {
   if (state !== 'playing' && state !== 'paused') return;
   state = 'over'; musicOn = false;
   const newHi = score > hiScore;
   if (newHi) { hiScore = score; save('hi', hiScore); }
+  $('over-title').textContent = 'GAME OVER';
   $('over-score').innerHTML = `SCORE ${String(score).padStart(6, '0')}<br/><br/>${newHi ? 'NEW HIGH SCORE!' : `HI ${String(hiScore).padStart(6, '0')}`}<br/><br/>REACHED STAGE ${stageNo}`;
+  $('btn-retry').textContent = `CONTINUE · STAGE ${stageNo}`;
   showOnly('over');
 }
 function refreshHi() { $('hiscore').textContent = `HI ${String(hiScore).padStart(6, '0')}`; }
 function toggleMode() { settings.modern = !settings.modern; save('modern', settings.modern); applyMode(); }
+// Screen orientation (phones): auto, portrait or landscape. Locks when the browser allows it, otherwise asks to rotate.
+const ORIENT_LABEL = { auto: 'AUTO', portrait: 'PORTRAIT', landscape: 'LANDSCAPE' };
+function updateRotateHint() {
+  const want = settings.orient, portrait = innerHeight > innerWidth;
+  const mismatch = isTouch && want !== 'auto' && (want === 'portrait') !== portrait;
+  $('rotate').classList.toggle('hidden', !mismatch);
+  if (mismatch) {
+    $('rotate-text').textContent = want === 'landscape' ? 'ROTATE YOUR PHONE SIDEWAYS' : 'HOLD YOUR PHONE UPRIGHT';
+    if (state === 'playing') pauseGame();
+  }
+}
+async function applyOrient(userGesture = false) {
+  const o = screen.orientation;
+  try {
+    if (settings.orient === 'auto') o?.unlock?.();
+    else if (o?.lock && userGesture) {
+      if (!document.fullscreenElement) await document.documentElement.requestFullscreen?.().catch(() => {});
+      await o.lock(settings.orient).catch(() => {});
+    }
+  } catch { /* not supported: the rotate hint covers it */ }
+  updateRotateHint();
+}
+function cycleOrient() {
+  const order = ['auto', 'portrait', 'landscape'];
+  settings.orient = order[(order.indexOf(settings.orient) + 1) % order.length];
+  save('orient', settings.orient);
+  syncOrientButtons();
+  applyOrient(true);
+}
+function syncOrientButtons() { for (const id of ['btn-orient', 'btn-orient2']) $(id).textContent = `SCREEN: ${ORIENT_LABEL[settings.orient]}`; }
 function toggleSound() {
   settings.sound = !settings.sound; save('sound', settings.sound);
   if (master) master.gain.value = settings.sound ? 0.5 : 0;
@@ -842,12 +939,17 @@ function toggleSound() {
   $('btn-sound').textContent = label; $('btn-sound2').textContent = label;
 }
 
-$('btn-play').addEventListener('click', startGame);
-$('btn-retry').addEventListener('click', startGame);
+$('btn-play').addEventListener('click', () => startGame());
+$('btn-retry').addEventListener('click', continueGame);
 $('btn-menu').addEventListener('click', quitToMenu);
 $('btn-resume').addEventListener('click', resumeGame);
 $('btn-quit').addEventListener('click', quitToMenu);
 for (const id of ['btn-mode', 'btn-mode2']) $(id).addEventListener('click', toggleMode);
+for (const id of ['btn-orient', 'btn-orient2']) $(id).addEventListener('click', () => { audioInit(); cycleOrient(); });
+syncOrientButtons();
+addEventListener('resize', updateRotateHint);
+addEventListener('orientationchange', () => setTimeout(updateRotateHint, 150));
+updateRotateHint();
 for (const id of ['btn-sound', 'btn-sound2']) $(id).addEventListener('click', () => { audioInit(); toggleSound(); });
 
 // PWA install prompt
@@ -977,8 +1079,27 @@ function updateEnemies(dt) {
         e.x -= e.speed * dt;
         e.y = e.baseY + Math.sin(e.t * 1.5) * 1.2;
         break;
+      case 'zigzag': {
+        e.x -= e.speed * dt;
+        const w = (e.t * 2.2 + (e.phase || 0)) % 2;                       // triangle wave: sharp turns
+        e.y = clamp(e.baseY + (w < 1 ? w * 2 - 1 : 3 - w * 2) * (e.amp || 2.5), -HH + 1, HH - 1);
+        break;
+      }
+      case 'orbiter': {
+        e.x -= e.speed * 0.6 * dt;
+        e.y = clamp(e.baseY + Math.sin(e.t * 2.4 + (e.phase || 0)) * (e.amp || 2.5), -HH + 1, HH - 1);
+        e.mesh.rotation.z = e.t * 3;
+        e.fireCd -= dt;
+        if (e.fireCd <= 0 && e.x < HW - 2 && e.x > player.x + 5) { fireEnemy(e.x - 0.8, e.y, aimAt(e.x, e.y), 8 + d); e.fireCd = rand(2, 3.4) / d; }
+        break;
+      }
+      case 'bomber':
+        if (e.x > e.stopX) e.x -= e.speed * dt; else e.x -= e.speed * 0.3 * dt;
+        e.fireCd -= dt;
+        if (e.fireCd <= 0 && e.x < HW - 1) { for (const da of [-0.22, 0, 0.22]) fireEnemy(e.x - 1, e.y, Math.PI + da, 7 + d); e.fireCd = 1.8 / d; }
+        break;
     }
-    if (e.type !== 'rock') e.mesh.rotation.x = Math.sin(e.t * 2) * 0.25;
+    if (e.type !== 'rock' && e.type !== 'orbiter') e.mesh.rotation.x = Math.sin(e.t * 2) * 0.25;
     e.mesh.position.set(e.x, e.y, 0);
     if (e.flash > 0) { e.flash -= dt; e.mats[0].emissive.setHex(0xffffff); e.mats[0].emissiveIntensity = 1; }
     else { e.mats[0].emissiveIntensity = 0; }
@@ -1001,14 +1122,15 @@ function updateBoss(dt) {
     if (Math.abs(b.x - (HW - 5)) < 0.3) b.phase = 'fight';
   } else {
     const range = HH - b.hh - 0.5 - (theme.floor ? 2 : 0);
-    b.y = Math.sin(b.t * 0.7) * Math.max(0, range);
-    b.x = HW - 5 + Math.sin(b.t * 0.45) * 2;
+    b.y = Math.sin(b.t * b.mv[0]) * Math.max(0, range);
+    b.x = HW - 5 + Math.sin(b.t * b.mv[1]) * b.mv[2];
     b.atkCd -= dt;
     if (b.atkCd <= 0) bossAttack();
   }
   b.mesh.position.set(b.x, b.y, 0);
   b.mesh.rotation.x = Math.sin(b.t * 1.3) * 0.25;
-  if (b.kind === 'boss2') b.mesh.rotation.z = b.t * 0.6;
+  if (b.kind === 'core') b.mesh.rotation.z = b.t * 0.6;
+  else if (b.kind === 'octopus' || b.kind === 'skull' || b.kind === 'mech') b.mesh.rotation.z = Math.sin(b.t * 1.6) * 0.12;
   if (b.flash > 0) { b.flash -= dt; b.mats[0].emissive.setHex(0xffffff); b.mats[0].emissiveIntensity = 0.8; } else b.mats[0].emissiveIntensity = 0;
   if (player.alive && hitBox(b, player.x, player.y, 0.2)) hurtPlayer();
 }
